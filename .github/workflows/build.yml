@@ -56,9 +56,19 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
+      - name: Resolve and validate configuration
+        run: |
+          cd immortalwrt
+          echo 'CONFIG_PACKAGE_luci-i18n-base-zh-cn=y' >> .config
+          make defconfig
+          for package in luci luci-compat luci-i18n-base-zh-cn ua3f; do
+            grep -qx "CONFIG_PACKAGE_${package}=y" .config || {
+              echo "::error::Required package missing after defconfig: ${package}"
+              exit 1
+            }
+          done
+
       - name: Build firmware
-        env:
-          MAKEFLAGS: "-j$(nproc)"
         run: |
           cd immortalwrt
           make -j$(nproc) || make -j1 V=s
